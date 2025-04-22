@@ -10,7 +10,7 @@ func load(path: String) -> Error:
     files.clear()
     
     var file := FileAccess.open(path, FileAccess.READ)
-    if not file:
+    if file == null:
         return ERR_FILE_CANT_OPEN
     
     # Read header
@@ -31,7 +31,7 @@ func load(path: String) -> Error:
     # Read file tree
     while file.get_position() < tree_size:
         var extension := file.get_string()
-        var path := file.get_string()
+        var path_str := file.get_string()
         var filename := file.get_string()
         
         var crc := file.get_32()
@@ -44,7 +44,7 @@ func load(path: String) -> Error:
         if terminator != 0xffff:
             break
         
-        var full_path := path.path_join(filename + "." + extension)
+        var full_path := path_str.path_join(filename + "." + extension)
         files[full_path] = {
             "archive_index": archive_index,
             "offset": entry_offset,
