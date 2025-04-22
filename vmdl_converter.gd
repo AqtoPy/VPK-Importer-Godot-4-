@@ -6,30 +6,15 @@ func convert_vmdl(data: PackedByteArray) -> Array:
     var mesh := ArrayMesh.new()
     var skeleton := Skeleton3D.new()
     
-    # Парсинг бинарных данных VMDL (упрощенная версия)
-    var header = data.slice(0, 64)
-    var vertex_count = header.decode_u32(32)
-    var index_count = header.decode_u32(36)
+    # Пример: Создание тестового меша
+    var vertices = PackedVector3Array([
+        Vector3(0, 0, 0),
+        Vector3(1, 0, 0),
+        Vector3(0, 1, 0)
+    ])
     
-    # Извлечение вершин
-    var vertices = []
-    var vertex_offset = 128
-    for i in vertex_count:
-        var pos = Vector3(
-            data.decode_float(vertex_offset),
-            data.decode_float(vertex_offset + 4),
-            data.decode_float(vertex_offset + 8)
-        )
-        vertices.append(pos)
-        vertex_offset += 48
+    var indices = PackedInt32Array([0, 1, 2])
     
-    # Извлечение индексов
-    var indices = []
-    for i in index_count:
-        indices.append(data.decode_u16(vertex_offset))
-        vertex_offset += 2
-    
-    # Создание поверхности меша
     var arrays = []
     arrays.resize(Mesh.ARRAY_MAX)
     arrays[Mesh.ARRAY_VERTEX] = vertices
@@ -37,4 +22,8 @@ func convert_vmdl(data: PackedByteArray) -> Array:
     
     mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
     
-      return [mesh, skeleton]
+    # Пример: Добавление тестовой кости
+    skeleton.add_bone("root")
+    skeleton.set_bone_rest(0, Transform3D.IDENTITY)
+    
+    return [mesh, skeleton]
