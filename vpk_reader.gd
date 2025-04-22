@@ -1,70 +1,63 @@
 @tool
-class_name VPKReader
+class_name CSGOVPKReader
 extends RefCounted
 
-const VPK_SIGNATURE := 0x55aa1234
+# Реализация чтения многотомных VPK архивов CS:GO
+var chunk_files = {}
+var file_index = {}
 
-var files: Dictionary = {}
-
-func load(path: String) -> Error:
-    files.clear()
-    
-    var file: FileAccess = FileAccess.open(path, FileAccess.READ)
-    if file == null:
+func load_vpk(vpk_path: String) -> Error:
+    var dir_file = FileAccess.open(vpk_path, FileAccess.READ)
+    if not dir_file:
         return ERR_FILE_CANT_OPEN
     
-    # Read header
-    var signature: int = file.get_32()
-    if signature != VPK_SIGNATURE:
-        return ERR_FILE_UNRECOGNIZED
+    # Чтение заголовка
+    dir_file.seek(12)  # Пропуск CS:GO специфичного заголовка
+    var tree_size = dir_file.get_32()
     
-    var version: int = file.get_32()
-    var tree_size: int = file.get_32()
-    
-    # Skip header fields based on version
-    if version == 1:
-        var _embedded_data_length: int = file.get_32() # Skip embedded data length
-    elif version == 2:
-        var _embedded_data_length: int = file.get_32() # Skip embedded data length
-        var _archive_md5_length: int = file.get_32() # Skip archive MD5 length
-    
-    # Read file tree
-    while file.get_position() < tree_size:
-        var extension: String = file.get_string()
-        var path_str: String = file.get_string()
-        var filename: String = file.get_string()
+    # Построение индекса файлов
+    while dir_file.get_position() < tree_size + 12:
+        var ext = dir_file.get_string()
+        var path = dir_file.get_string()
+        var filename = dir_file.get_string()
         
-        var crc: int = file.get_32()
-        var preload_bytes: int = file.get_16()
-        var archive_index: int = file.get_16()
-        var entry_offset: int = file.get_32()
-        var entry_length: int = file.get_32()
-        var terminator: int = file.get_16()
+        # Чтение метаданных файла
+        dir_file.get_32()  # CRC32
+        var preload_size = dir_file.get_16()
+        var archive_index = dir_file.get_16()
+        var offset = dir_file.get_32()
+        var length = dir_file.get_32()
         
-        if terminator != 0xffff:
-            break
-        
-        var full_path: String = path_str.path_join(filename + "." + extension)
-        files[full_path] = {
-            "archive_index": archive_index,
-            "offset": entry_offset,
-            "length": entry_length,
-            "preload_data": file.get_buffer(preload_bytes) if preload_bytes > 0 else PackedByteArray()
+        var full_path = "%s/%s.%s" % [path, filename, ext]
+        file_index[full_path.to_lower()] = {
+            "archive": archive_index,
+            "offset": offset,
+            "length": length,
+            "preload": dir_file.get_buffer(preload_size)
         }
+        dir_file.get_16()  # Terminator
+        
+    # Загрузка chunk-файлов
+    var base_path = vpk_path.get_basename().replace("_dir", "")
+    for i in 1000:
+        var chunk_path = "%s_%03d.vpk" % [base_path, i]
+        if FileAccess.file_exists(chunk_path):
+            chunk_files[i] = FileAccess.open(chunk_path, FileAccess.READ)
     
     return OK
 
-func get_files() -> PackedStringArray:
-    return PackedStringArray(files.keys())
-
-func read_file(path: String) -> PackedByteArray:
-    if not files.has(path):
+func get_file(path: String) -> PackedByteArray:
+    path = path.to_lower()
+    if not file_index.has(path):
         return PackedByteArray()
     
-    var entry: Dictionary = files[path]
-    var data: PackedByteArray = entry.get("preload_data", PackedByteArray())
+    var entry = file_index[path]
+    var data = entry["preload"]
     
-    # TODO: Add support for reading from archive chunks
-    # This would require handling the multi-part VPK files
+    if entry["archive"] != 0x7FFF:
+        var chunk = chunk_files.get(entry["archive"])
+        if chunk:
+            chunk.seek(entry["offset"])
+            data += chunk.get_buffer(entry["length"])
     
     return data
