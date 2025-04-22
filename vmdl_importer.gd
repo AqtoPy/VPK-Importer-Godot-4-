@@ -4,45 +4,37 @@ extends EditorImportPlugin
 func _get_importer_name() -> String:
     return "csgo.vmdl"
 
+func _get_visible_name() -> String:
+    return "CS:GO Model"
+
 func _get_recognized_extensions() -> PackedStringArray:
-    return PackedStringArray(["vmdl_c"])
+    return ["vmdl_c"]
 
 func _get_save_extension() -> String:
-    return "mesh"
+    return "scn"
 
 func _get_resource_type() -> String:
-    return "ArrayMesh"
+    return "PackedScene"
 
 func _get_priority() -> float:
     return 1.0
 
+func _get_import_order() -> int:
+    return 100
+
+func _get_preset_count() -> int:
+    return 1
+
+func _get_preset_name(preset_index: int) -> String:
+    return "Default"
+
+func _get_import_options(path: String, preset_index: int) -> Array[Dictionary]:
+    return []
+
 func _import(source_file: String, save_path: String, options: Dictionary, 
            platform_variants: Array[String], gen_files: Array[String]) -> Error:
-    var file = FileAccess.open(source_file, FileAccess.READ)
-    if file == null:
-        return ERR_FILE_CANT_OPEN
-        
-    var data = file.get_buffer(file.get_length())
-    var converter = preload("vmdl_converter.gd").new()
-    var result = converter.convert_vmdl(data)
-    
-    if result.size() < 2:
-        return ERR_PARSE_ERROR
-    
-    var mesh: ArrayMesh = result[0]
-    var skeleton_data: Resource = result[1]  # Используем Resource вместо Skeleton3D
-    
-    # Сохранение меша
-    var mesh_save_path = "%s.%s" % [save_path, _get_save_extension()]
-    var err = ResourceSaver.save(mesh, mesh_save_path)
-    if err != OK:
-        return err
-    
-    # Сохранение данных скелета
-    if skeleton_data:
-        var skeleton_save_path = "%s_skeleton.tres" % save_path
-        err = ResourceSaver.save(skeleton_data, skeleton_save_path)
-        if err != OK:
-            push_warning("Failed to save skeleton data: " + str(err))
-    
-    return OK
+    var scene = PackedScene.new()
+    var mesh_instance = MeshInstance3D.new()
+    mesh_instance.name = "CSGO_Model"
+    scene.pack(mesh_instance)
+    return ResourceSaver.save(scene, "%s.%s" % [save_path, _get_save_extension()))
