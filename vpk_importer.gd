@@ -48,7 +48,7 @@ func _import(source_file: String, save_path: String, options: Dictionary, platfo
     result.set_meta("vpk_source", source_file)
     
     if options.get("extract_files", false):
-        var patterns: PackedStringArray = options.get("file_patterns", "").split(",")
+        var patterns: PackedStringArray = PackedStringArray(options.get("file_patterns", "").split(","))
         var extracted_files := _extract_files_from_vpk(vpk, patterns, save_path, gen_files)
         result.set_meta("extracted_files", extracted_files)
     
