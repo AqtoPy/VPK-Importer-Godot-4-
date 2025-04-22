@@ -7,11 +7,9 @@ func _get_importer_name() -> String:
 func _get_recognized_extensions() -> PackedStringArray:
     return PackedStringArray(["vmdl_c"])
 
-# Добавляем метод указания расширения
 func _get_save_extension() -> String:
     return "mesh"
 
-# Добавляем тип ресурса
 func _get_resource_type() -> String:
     return "ArrayMesh"
 
@@ -32,7 +30,7 @@ func _import(source_file: String, save_path: String, options: Dictionary,
         return ERR_PARSE_ERROR
     
     var mesh: ArrayMesh = result[0]
-    var skeleton: Skeleton3D = result[1]
+    var skeleton_data: Resource = result[1]  # Используем Resource вместо Skeleton3D
     
     # Сохранение меша
     var mesh_save_path = "%s.%s" % [save_path, _get_save_extension()]
@@ -40,11 +38,11 @@ func _import(source_file: String, save_path: String, options: Dictionary,
     if err != OK:
         return err
     
-    # Сохранение скелета как отдельного ресурса
-    if skeleton:
-        var skeleton_save_path = "%s_skeleton.res" % save_path
-        err = ResourceSaver.save(skeleton, skeleton_save_path)
+    # Сохранение данных скелета
+    if skeleton_data:
+        var skeleton_save_path = "%s_skeleton.tres" % save_path
+        err = ResourceSaver.save(skeleton_data, skeleton_save_path)
         if err != OK:
-            push_warning("Failed to save skeleton: " + str(err))
+            push_warning("Failed to save skeleton data: " + str(err))
     
     return OK
