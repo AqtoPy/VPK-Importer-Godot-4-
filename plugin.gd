@@ -1,25 +1,25 @@
 @tool
 extends EditorPlugin
 
-const Importers = [
-    preload("vpk_importer/vpk_importer.gd"),
-    preload("importers/vmdl_importer.gd"),
-    preload("importers/vtex_importer.gd"),
-    preload("importers/vsnd_importer.gd"),
-    preload("importers/vmat_importer.gd")
-]
+const VPKImporter = preload("vpk_importer.gd")
+const VMDLImporter = preload("vmdl_importer.gd")
+const VTEXImporter = preload("vtex_importer.gd")
 
 var importers = []
 
 func _enter_tree():
-    for importer_class in Importers:
-        var importer = importer_class.new()
+    # Регистрация всех импортеров
+    importers.append(VPKImporter.new())
+    importers.append(VMDLImporter.new())
+    importers.append(VTEXImporter.new())
+    
+    for importer in importers:
         add_import_plugin(importer)
-        importers.append(importer)
-    print("CS:GO Importer loaded")
+    
+    print("CS:GO Importer успешно активирован")
 
 func _exit_tree():
     for importer in importers:
         remove_import_plugin(importer)
     importers.clear()
-    print("CS:GO Importer unloaded")
+    print("CS:GO Importer выгружен")
