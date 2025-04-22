@@ -1,17 +1,25 @@
 @tool
 extends EditorPlugin
 
-const VPKImporter = preload("vpk_importer.gd")
+const Importers = [
+    preload("vpk_importer/vpk_importer.gd"),
+    preload("importers/vmdl_importer.gd"),
+    preload("importers/vtex_importer.gd"),
+    preload("importers/vsnd_importer.gd"),
+    preload("importers/vmat_importer.gd")
+]
 
-var importer: EditorImportPlugin
+var importers = []
 
 func _enter_tree():
-    importer = VPKImporter.new()
-    add_import_plugin(importer)
-    print("VPK Importer plugin loaded")
+    for importer_class in Importers:
+        var importer = importer_class.new()
+        add_import_plugin(importer)
+        importers.append(importer)
+    print("CS:GO Importer loaded")
 
 func _exit_tree():
-    if importer:
+    for importer in importers:
         remove_import_plugin(importer)
-        importer = null
-    print("VPK Importer plugin unloaded")
+    importers.clear()
+    print("CS:GO Importer unloaded")
